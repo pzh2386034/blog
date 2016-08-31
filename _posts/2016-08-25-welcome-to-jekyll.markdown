@@ -18,6 +18,11 @@ print_hi('Tom')
 #=> prints 'Hi, Tom' to STDOUT.
 {% endhighlight %}
 
+{% highlight c %}
+#include "stdlib.h"
+#include "stdio.h"
+{% endhighlight %}
+
 Check out the [Jekyll docs][jekyll-docs] for more info on how to get the most out of Jekyll. File all bugs/feature requests at [Jekyll’s GitHub repo][jekyll-gh]. If you have questions, you can ask them on [Jekyll Talk][jekyll-talk].
 
 [Link to first post]({% link _posts/2016-08-21-vaList.md %})
