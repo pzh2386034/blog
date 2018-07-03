@@ -1,0 +1,97 @@
+Thread 1 (LWP 1395):
+#0  0x1f3351a4 in ?? () from /lib/libpthread.so.0
+#1  0x1f32ed7c in pthread_mutex_lock () from /lib/libpthread.so.0
+#2  0x2043d6a4 in CSystem::GetRedundancyState (this=0x2096a114 <g_muSmmCfgFile>) at /usr1/code/HMM_code_Build/code/current/iMM/SMM/src/IPMI/src/ipmi/CSystem.cpp:10517
+#3  0x203daac4 in Config::WriteCfgToFile (this=0x2096a114 <g_muSmmCfgFile>) at /usr1/code/HMM_code_Build/code/current/iMM/SMM/src/IPMI/src/ipmi/Config.cpp:2291
+#4  0x2044d378 in CSystem::SetShelfPowerCapping (this=0x2118e768, ulpowercapping=20000) at /usr1/code/HMM_code_Build/code/current/iMM/SMM/src/IPMI/src/ipmi/CSystem.cpp:3157
+#5  0x205508a4 in smmapi_set_shelfpowercapping_ipmi (ulpowercapping=20000) at /usr1/code/HMM_code_Build/code/current/iMM/SMM/src/IPMI/src/ipmi/smm_api_ipmi.cpp:20430
+#6  0x206052f0 in rpccall_smmapi_set_shelf_powercapping (username=0x8bac423c "root", userIP=0x8bac443c "172.190.1.31", usermode=0x8bac447c "", chassisnumber=0, input=<optimized out>,
+    inputlen=<optimized out>, output=<optimized out>, outputlen=<optimized out>) at /usr1/code/HMM_code_Build/code/current/iMM/SMM/src/IPMI/src/ipmi/rpc_api.c:8482
+#7  0x2061eea0 in all_api_in_one_1_svc (input_parameter=0x8bac4238, q=<optimized out>) at /usr1/code/HMM_code_Build/code/current/iMM/SMM/src/IPMI/src/ipmi/rpc_server.c:1249
+#8  0x2061d464 in rpcapiprog_1 (rqstp=0x8bac44e8, transp=0x21260218) at /usr1/code/HMM_code_Build/code/current/iMM/SMM/src/IPMI/src/ipmi/rpc_svc.c:434
+#9  0x1e72f1c4 in svc_getreq_common () from /lib/libc.so.6
+#10 0x1e72f6a0 in svc_getreq_poll () from /lib/libc.so.6
+#11 0x1e72ff1c in svc_run () from /lib/libc.so.6
+#12 0x2061dc48 in rpc_main () at /usr1/code/HMM_code_Build/code/current/iMM/SMM/src/IPMI/src/ipmi/rpc_svc.c:608
+#13 0x205b4e00 in rpc_init_task (ulPara1=<optimized out>, ulPara2=<optimized out>, ulPara3=<optimized out>, ulPara4=<optimized out>)
+    at /usr1/code/HMM_code_Build/code/current/iMM/SMM/src/IPMI/src/ipmi/ipmi_main.c:1022
+#14 0x2026c938 in VOS_TaskEntry (pulArg=0x1007c) at ipmi_v_task.c:3182
+#15 0x1f32c2cc in ?? () from /lib/libpthread.so.0
+#16 0x1e702198 in clone () from /lib/libc.so.6
+
+
+    if (VOS_OK != pthread_mutex_lock((pthread_mutex_t*)&g_muSmmCfgFile))
+    {
+        OSCAErrLog("Failed to lock g_muSmmCfgFile, errno=%d, str=%s", errno, strerror(errno));
+
+        DELETE_ARR(buffer);
+        DELETE_ARR(tempString);
+        DELETE_ARR(tempValue);
+
+        /*BEGIN: PCLint_DTS2014031303742_ignore zhuxiongxiong 2014/3/13*/
+        /*lint -e454*/
+        return VOS_ERR;
+        /*lint +e454*/
+    }
+    
+        APPLY_OBJ_MODIFY_PROTECT
+    if (m_cfg.m_shelfpower_lower <= ulpowercapping)
+    {
+        /* BEGIN: Modified by wanglei, 2012/10/15   PN:OSTA3V1R1_CODE_DTS2012100908464 设置功率封顶值时进行完备检查*/
+        if(!m_pPowerFeed)
+        {
+            return SMP_ERR_BLADEPOWERCAPPING_UNSET;
+        }
+        // 更新电源额定功率和实时功率
+        if (VOS_OK != m_pPowerFeed->GetPemBudgetPower())
+        {
+            OSCAErrLog("GetPemBudgetPower");
+            return SMP_ERR_BLADEPOWERCAPPING_UNSET;
+        }
+
+        // 设置整框功率封顶值时重新分配功率封顶值
+        if (VOS_OK != PowerCappingCtrl(VOS_TRUE,ulpowercapping))
+        {
+            OSCAErrLog("PowerCappingCtrl");
+            return SMP_ERR_SET_VALUE_LOWER;
+        }
+        /* BEGIN: Modified by wanglei, 2012/10/15   PN:OSTA3V1R1_CODE_DTS2012100908464 设置功率封顶值时进行完备检查*/
+
+        m_cfg.m_shelfpwrcapping = ulpowercapping;
+
+        (void)m_cfg.WriteCfgToFile();//将使能状态写入配置文件,WriteCfgToFile()会调用刷新数据和文件同步状态
+
+
+
+#define APPLY_OBJ_READ_PROTECT    CRWMux mux(*this,1,__FILE__,__LINE__);
+#define APPLY_OBJ_MODIFY_PROTECT  CRWMux mux(*this,0,__FILE__,__LINE__);
+
+class CRWMux \
+{ \
+public: \
+    CRWMux(type& obj, VOS_UINT32 ulLockType,IPMI_CONST char* file, int line) \
+    { \
+        __file = file;__line = line; \
+        __ulRWSemID = obj.m_ulSemID_##type; \
+        if(0 == ulLockType) \
+        { \
+            __ulResult = VOS_SmWrP(__ulRWSemID); \
+        } \
+        else \
+        { \
+            __ulResult = VOS_SmRdP(__ulRWSemID); \
+        } \
+    } \
+    virtual ~CRWMux() \
+    { \
+        if(0 == __ulResult) \
+        { \
+            (void)VOS_SmV(__ulRWSemID); \
+        } \
+    } \
+protected: \
+    VOS_UINT32 __ulRWSemID; \
+    VOS_UINT32 __ulResult; \
+    IPMI_CONST char *__file; \
+    int __line; \
+};
