@@ -20,6 +20,22 @@ Thread 1 (LWP 1395):
 #16 0x1e702198 in clone () from /lib/libc.so.6
 
 
+Thread 82 (LWP 1328):
+#0  0x1f330670 in pthread_rwlock_rdlock () from /lib/libpthread.so.0
+#1  0x20270fec in thread_timed_mutex_lock (id=0x2118e3a8, timeout_rw=1) at ipmi_sm_low.c:412
+#2  0x20265ef8 in VOS_SmRdP (Sm_ID=555279272) at ipmi_v_sm.c:329
+#3  0x203b4298 in CObItem::CRWMux::CRWMux (line=<optimized out>, ulLockType=<optimized out>, obj=..., this=<optimized out>, file=<optimized out>)
+    at /usr1/code/HMM_code_Build/code/current/iMM/SMM/src/IPMI/src/ipmi/COtlistDef.h:366
+#4  CObItem::InvalidateData (this=0x2118e768, IDString=0x207f8f38 <SYN_SYSTEM_IDSTRING> "System Data") at /usr1/code/HMM_code_Build/code/current/iMM/SMM/src/IPMI/src/ipmi/COtlistDef.h:253
+#5  0x203dac30 in Config::WriteCfgToFile (this=<optimized out>) at /usr1/code/HMM_code_Build/code/current/iMM/SMM/src/IPMI/src/ipmi/Config.cpp:2370
+#6  0x2077a258 in CPortconnection_Manager::set_indexnum_to_system (pSystem=<optimized out>) at /usr1/code/HMM_code_Build/code/current/iMM/SMM/src/IPMI/src/ipmi/CPortconnection_manager.cpp:249
+#7  0x2077ec84 in CPortconnection_Manager::check_PortConnectionInfo_loop_task (ulPara1=555280232, ulPara2=555297112, ulPara3=<optimized out>, ulPara4=<optimized out>)
+    at /usr1/code/HMM_code_Build/code/current/iMM/SMM/src/IPMI/src/ipmi/CPortconnection_manager.cpp:336
+#8  0x2026c938 in VOS_TaskEntry (pulArg=0x10073) at ipmi_v_task.c:3182
+#9  0x1f32c2cc in ?? () from /lib/libpthread.so.0
+#10 0x1e702198 in clone () from /lib/libc.so.6
+
+
     if (VOS_OK != pthread_mutex_lock((pthread_mutex_t*)&g_muSmmCfgFile))
     {
         OSCAErrLog("Failed to lock g_muSmmCfgFile, errno=%d, str=%s", errno, strerror(errno));
@@ -95,3 +111,21 @@ protected: \
     IPMI_CONST char *__file; \
     int __line; \
 };
+
+
+    case SEM_RWLOCK:
+        if(0 == timeout_rw)
+        {
+            err = pthread_rwlock_wrlock(&(m->rwlock));
+        }
+        else
+        {
+            err = pthread_rwlock_rdlock(&(m->rwlock));
+        }
+        if(err)
+        {
+            err = VOS_ERRNO_SEMA4_CANTP;
+        }
+        break;
+    default:
+        return SEM_TYPE_ERR;
